@@ -164,7 +164,7 @@ class BBoxHead(nn.Module):
             if concat:
                 labels = torch.cat(labels, 0)
                 label_weights = torch.cat(label_weights, 0)
-                attrs = torch.cat(attrs, 0)
+                attrs = torch.cat(attrs, 0)   # NOTE: need padding here!
                 attr_weights = torch.cat(attr_weights, 0)
                 bbox_targets = torch.cat(bbox_targets, 0)
                 bbox_weights = torch.cat(bbox_weights, 0)

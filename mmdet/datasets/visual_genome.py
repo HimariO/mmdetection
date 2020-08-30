@@ -1,4 +1,5 @@
 import json
+import random
 import mmcv
 import numpy as np
 
@@ -1631,7 +1632,7 @@ class VisualGenome(CustomDataset):
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 1, width - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 1, height - 1)
             labels = ann_line['class_id'] 
-            attrs = [[1, 2]] * len(labels)
+            attrs = [[3] * random.randint(1, 3)] * len(labels)
             # attrs = ann_line['attributes']        
 
             data_infos.append(
