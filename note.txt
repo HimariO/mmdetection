@@ -1,0 +1,3 @@
+sudo nvidia-docker run -v /home/ron_zhu/remote-sync/mmdetection/mmdet:/mmdetection/mmdet \
+    -v /home/ron_zhu/remote-sync/mmdetection/configs/:/mmdetection/configs \
+    -v "$HOME/Disk3":/Disk2 --shm-size 4g -it asia.gcr.io/$PROJECT_ID/mmdet:latest bash

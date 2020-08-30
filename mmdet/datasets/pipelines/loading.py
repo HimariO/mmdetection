@@ -215,12 +215,14 @@ class LoadAnnotations(object):
     def __init__(self,
                  with_bbox=True,
                  with_label=True,
+                 with_attrs=False,
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
+        self.with_attrs = with_attrs
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
@@ -258,6 +260,19 @@ class LoadAnnotations(object):
         """
 
         results['gt_labels'] = results['ann_info']['labels'].copy()
+        return results
+
+    def _load_attrs(self, results):
+        """Private function to load label annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded label annotations.
+        """
+
+        results['gt_attrs'] = results['ann_info']['attrs'].copy()
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
@@ -367,6 +382,8 @@ class LoadAnnotations(object):
                 return None
         if self.with_label:
             results = self._load_labels(results)
+        if self.with_attrs:
+            results = self._load_attrs(results)
         if self.with_mask:
             results = self._load_masks(results)
         if self.with_seg:

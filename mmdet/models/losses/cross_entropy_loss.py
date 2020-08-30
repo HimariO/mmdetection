@@ -78,6 +78,12 @@ def binary_cross_entropy(pred,
     """
     if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
+    
+    if pred.dim() == label.dim() and pred.shape[-1] != label.shape[-1] and label.dtype == torch.long:
+        num_class = pred.shape[-1]
+        onehot = torch.nn.functional.one_hot(label, num_classes=num_class + 1)
+        onehot = onehot.sum(dim=1)[..., :-1]  # remove background/no-attr class
+        label = onehot
 
     # weighted element-wise losses
     if weight is not None:
@@ -85,6 +91,10 @@ def binary_cross_entropy(pred,
     loss = F.binary_cross_entropy_with_logits(
         pred, label.float(), weight=class_weight, reduction='none')
     # do the reduction for the weighted loss
+    # if label.shape[-1] > 10:
+    #     import pdb; pdb.set_trace()
+    if loss.dim() == 2 and loss.shape[-1] > 1:
+        loss = loss.sum(dim=-1)
     loss = weight_reduce_loss(
         loss, weight, reduction=reduction, avg_factor=avg_factor)
 

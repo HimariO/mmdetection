@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -46,6 +47,17 @@ def accuracy(pred, target, topk=1, thresh=None):
         correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
         res.append(correct_k.mul_(100.0 / pred.size(0)))
     return res[0] if return_single else res
+
+
+def multi_class_auccary(pred, target, thresh=0.5):
+    assert pred.ndim == 2 and target.ndim == 2
+    assert pred.size(0) == target.size(0)
+    num_class = pred.shape[-1]
+    mask = nn.functional.one_hot(target, num_classes=num_class + 1)
+    mask = mask.sum(dim=1)[..., :-1] > 0.1
+    correct = (pred[mask] > thresh).sum().float()
+    total = mask.sum().float()
+    return 100.0 * (correct / total)
 
 
 class Accuracy(nn.Module):

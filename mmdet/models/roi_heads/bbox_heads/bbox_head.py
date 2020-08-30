@@ -6,7 +6,7 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import (auto_fp16, build_bbox_coder, force_fp32, multi_apply,
                         multiclass_nms)
 from mmdet.models.builder import HEADS, build_loss
-from mmdet.models.losses import accuracy
+from mmdet.models.losses import accuracy, multi_class_auccary
 
 
 @HEADS.register_module()
@@ -18,9 +18,11 @@ class BBoxHead(nn.Module):
                  with_avg_pool=False,
                  with_cls=True,
                  with_reg=True,
+                 with_attr=False,
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=80,
+                 num_attr_classes=80,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
                      target_means=[0., 0., 0., 0.],
@@ -31,6 +33,10 @@ class BBoxHead(nn.Module):
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
+                 loss_attr=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(BBoxHead, self).__init__()
@@ -38,6 +44,7 @@ class BBoxHead(nn.Module):
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
         self.with_reg = with_reg
+        self.with_attr = with_attr
         self.roi_feat_size = _pair(roi_feat_size)
         self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
@@ -48,6 +55,7 @@ class BBoxHead(nn.Module):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
+        self.loss_attr = build_loss(loss_attr)
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
@@ -61,6 +69,9 @@ class BBoxHead(nn.Module):
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
+        if self.with_attr:
+            # NOTE: multi-label per box, not using softmax
+            self.fc_attr = nn.Linear(in_channels, num_attr_classes)
         self.debug_imgs = None
 
     def init_weights(self):
@@ -68,6 +79,9 @@ class BBoxHead(nn.Module):
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
+        if self.with_attr:
+            nn.init.normal_(self.fc_attr.weight, 0, 0.01)
+            nn.init.constant_(self.fc_attr.bias, 0)
         if self.with_reg:
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
@@ -78,8 +92,12 @@ class BBoxHead(nn.Module):
             x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         cls_score = self.fc_cls(x) if self.with_cls else None
+        attr_score = self.fc_attr(x) if self.with_attr else None
         bbox_pred = self.fc_reg(x) if self.with_reg else None
-        return cls_score, bbox_pred
+        if with_attr:
+            return cls_score, bbox_pred, attr_score
+        else:
+            return cls_score, bbox_pred
 
     def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
                            pos_gt_labels, cfg):
@@ -90,7 +108,8 @@ class BBoxHead(nn.Module):
         # original implementation uses new_zeros since BG are set to be 0
         # now use empty & fill because BG cat_id = num_classes,
         # FG cat_id = [0, num_classes-1]
-        labels = pos_bboxes.new_full((num_samples, ),
+        label_shape = (num_samples,) if pos_gt_labels.ndim == 1 else (num_samples, pos_gt_labels.shape[-1])
+        labels = pos_bboxes.new_full(label_shape,
                                      self.num_classes,
                                      dtype=torch.long)
         label_weights = pos_bboxes.new_zeros(num_samples)
@@ -122,6 +141,7 @@ class BBoxHead(nn.Module):
         neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+        
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
             self._get_target_single,
             pos_bboxes_list,
@@ -129,13 +149,33 @@ class BBoxHead(nn.Module):
             pos_gt_bboxes_list,
             pos_gt_labels_list,
             cfg=rcnn_train_cfg)
+        
+        if self.with_attr:
+            pos_gt_attrs_list = [res.pos_gt_attrs for res in sampling_results]
+            
+            attrs, attr_weights, _, _ = multi_apply(
+                self._get_target_single,
+                pos_bboxes_list,
+                neg_bboxes_list,
+                pos_gt_bboxes_list,
+                pos_gt_attrs_list,
+                cfg=rcnn_train_cfg)
 
-        if concat:
-            labels = torch.cat(labels, 0)
-            label_weights = torch.cat(label_weights, 0)
-            bbox_targets = torch.cat(bbox_targets, 0)
-            bbox_weights = torch.cat(bbox_weights, 0)
-        return labels, label_weights, bbox_targets, bbox_weights
+            if concat:
+                labels = torch.cat(labels, 0)
+                label_weights = torch.cat(label_weights, 0)
+                attrs = torch.cat(attrs, 0)
+                attr_weights = torch.cat(attr_weights, 0)
+                bbox_targets = torch.cat(bbox_targets, 0)
+                bbox_weights = torch.cat(bbox_weights, 0)
+            return labels, label_weights, bbox_targets, bbox_weights, attrs, attr_weights
+        else:
+            if concat:
+                labels = torch.cat(labels, 0)
+                label_weights = torch.cat(label_weights, 0)
+                bbox_targets = torch.cat(bbox_targets, 0)
+                bbox_weights = torch.cat(bbox_weights, 0)
+            return labels, label_weights, bbox_targets, bbox_weights
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
@@ -182,6 +222,43 @@ class BBoxHead(nn.Module):
                     reduction_override=reduction_override)
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0
+        return losses
+    
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
+    def loss_with_attr(self,
+                       cls_score,
+                       bbox_pred,
+                       attr_score,
+                       rois,
+                       labels,
+                       label_weights,
+                       bbox_targets,
+                       bbox_weights,
+                       attrs,
+                       attr_weights,
+                       reduction_override=None):
+        losses = dict()
+        og_losses = self.loss(
+             cls_score,
+             bbox_pred,
+             rois,
+             labels,
+             label_weights,
+             bbox_targets,
+             bbox_weights,
+             reduction_override=reduction_override)
+        losses.update(og_losses)
+
+        if attr_score is not None:
+            avg_factor = max(torch.sum(attr_weights > 0).float().item(), 1.)
+            if attr_score.numel() > 0:
+                losses['loss_attr'] = self.loss_attr(
+                    attr_score,
+                    attrs,
+                    attr_weights,
+                    avg_factor=avg_factor,
+                    reduction_override=reduction_override)
+                losses['attr_acc'] = multi_class_auccary(attr_score, attrs)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

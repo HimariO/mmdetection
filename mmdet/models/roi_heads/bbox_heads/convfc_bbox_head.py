@@ -22,6 +22,8 @@ class ConvFCBBoxHead(BBoxHead):
                  num_shared_fcs=0,
                  num_cls_convs=0,
                  num_cls_fcs=0,
+                 num_attr_convs=0,
+                 num_attr_fcs=0,
                  num_reg_convs=0,
                  num_reg_fcs=0,
                  conv_out_channels=256,
@@ -43,6 +45,8 @@ class ConvFCBBoxHead(BBoxHead):
         self.num_shared_fcs = num_shared_fcs
         self.num_cls_convs = num_cls_convs
         self.num_cls_fcs = num_cls_fcs
+        self.num_attr_convs = num_attr_convs
+        self.num_attr_fcs = num_attr_fcs
         self.num_reg_convs = num_reg_convs
         self.num_reg_fcs = num_reg_fcs
         self.conv_out_channels = conv_out_channels
@@ -61,6 +65,11 @@ class ConvFCBBoxHead(BBoxHead):
         self.cls_convs, self.cls_fcs, self.cls_last_dim = \
             self._add_conv_fc_branch(
                 self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
+        
+        # add attr specific branch
+        self.attr_convs, self.attr_fcs, self.attr_last_dim = \
+            self._add_conv_fc_branch(
+                self.num_attr_convs, self.num_attr_fcs, self.shared_out_channels)
 
         # add reg specific branch
         self.reg_convs, self.reg_fcs, self.reg_last_dim = \
@@ -77,6 +86,8 @@ class ConvFCBBoxHead(BBoxHead):
         # reconstruct fc_cls and fc_reg since input channels are changed
         if self.with_cls:
             self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes + 1)
+        if self.with_attr:
+            self.fc_attr = nn.Linear(self.attr_last_dim, self.num_classes)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
@@ -149,6 +160,7 @@ class ConvFCBBoxHead(BBoxHead):
         # separate branches
         x_cls = x
         x_reg = x
+        x_attr = x
 
         for conv in self.cls_convs:
             x_cls = conv(x_cls)
@@ -158,6 +170,15 @@ class ConvFCBBoxHead(BBoxHead):
             x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
+        
+        for conv in self.attr_convs:
+            x_attr = conv(x_attr)
+        if x_attr.dim() > 2:
+            if self.with_avg_pool:
+                x_attr = self.avg_pool(x_attr)
+            x_attr = x_attr.flatten(1)
+        for fc in self.attr_fcs:
+            x_attr = self.relu(fc(x_attr))
 
         for conv in self.reg_convs:
             x_reg = conv(x_reg)
@@ -169,8 +190,9 @@ class ConvFCBBoxHead(BBoxHead):
             x_reg = self.relu(fc(x_reg))
 
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
+        attr_score = self.fc_attr(x_attr) if self.with_attr else None
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
-        return cls_score, bbox_pred
+        return cls_score, bbox_pred, attr_score
 
 
 @HEADS.register_module()

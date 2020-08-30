@@ -39,11 +39,12 @@ class AssignResult(util_mixins.NiceRepr):
                       labels.shape=(7,))>
     """
 
-    def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
+    def __init__(self, num_gts, gt_inds, max_overlaps, labels=None, attrs=None):
         self.num_gts = num_gts
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
+        self.attrs = attrs
         # Interface for possible user-defined properties
         self._extra_properties = {}
 
@@ -70,6 +71,7 @@ class AssignResult(util_mixins.NiceRepr):
             'gt_inds': self.gt_inds,
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
+            'attrs': self.attrs,
         }
         basic_info.update(self._extra_properties)
         return basic_info
@@ -91,6 +93,10 @@ class AssignResult(util_mixins.NiceRepr):
             parts.append(f'labels={self.labels!r}')
         else:
             parts.append(f'labels.shape={tuple(self.labels.shape)!r}')
+        if self.attrs is None:
+            parts.append(f'attrs={self.attrs!r}')
+        else:
+            parts.append(f'attrs.shape={tuple(self.attrs.shape)!r}')
         return ', '.join(parts)
 
     @classmethod
@@ -187,7 +193,7 @@ class AssignResult(util_mixins.NiceRepr):
         self = cls(num_gts, gt_inds, max_overlaps, labels)
         return self
 
-    def add_gt_(self, gt_labels):
+    def add_gt_(self, gt_labels, gt_attrs=None):
         """Add ground truth as assigned results.
 
         Args:
@@ -202,3 +208,5 @@ class AssignResult(util_mixins.NiceRepr):
 
         if self.labels is not None:
             self.labels = torch.cat([gt_labels, self.labels])
+        if self.attrs is not None:
+            self.attrs = torch.cat([gt_attrs, self.attrs])
