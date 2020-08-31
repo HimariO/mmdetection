@@ -22,5 +22,5 @@ WORKDIR /mmdetection
 ENV FORCE_CUDA="1"
 RUN pip install -r requirements/build.txt
 RUN pip install --no-cache-dir -e .
-RUN apt-get install 'ffmpeg' 'libsm6' 'libxext6' vim -y
+RUN apt-get update && apt-get install 'ffmpeg' 'libsm6' 'libxext6' vim -y
 RUN sed -i "1iforce_color_prompt=true" ~/.bashrc
