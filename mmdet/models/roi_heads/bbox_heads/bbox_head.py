@@ -49,6 +49,7 @@ class BBoxHead(nn.Module):
         self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
+        self.num_attr_classes = num_attr_classes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
         self.fp16_enabled = False
@@ -108,9 +109,10 @@ class BBoxHead(nn.Module):
         # original implementation uses new_zeros since BG are set to be 0
         # now use empty & fill because BG cat_id = num_classes,
         # FG cat_id = [0, num_classes-1]
-        label_shape = (num_samples,) if pos_gt_labels.ndim == 1 else (num_samples, pos_gt_labels.shape[-1])
+        is_cls_label = pos_gt_labels.ndim == 1
+        label_shape = (num_samples,) if is_cls_label else (num_samples, pos_gt_labels.shape[-1])
         labels = pos_bboxes.new_full(label_shape,
-                                     self.num_classes,
+                                     self.num_classes if is_cls_label else self.num_attr_classes,
                                      dtype=torch.long)
         label_weights = pos_bboxes.new_zeros(num_samples)
         bbox_targets = pos_bboxes.new_zeros(num_samples, 4)

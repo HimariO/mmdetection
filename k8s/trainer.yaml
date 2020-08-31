@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mmdet-trainer
+  labels:
+    app: mmdet-trainer
+spec:
+  template:
+    metadata:
+      labels:
+        app: mmdet-trainer
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+        - name: vl-bert-trainer-volume
+          persistentVolumeClaim:
+            claimName: vl-bert-trainer-volume-claim
+        - name: cache-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+      containers:
+        - name: mmdet-trainer
+          image: asia.gcr.io/alfredlabs-model-training/vl-bert
+          command: ["/bin/sh", "-c"]
+          args: [
+            "python3"
+          ]
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          resources:
+            limits:
+              cpu: "12"
+              memory: "48Gi"
+              nvidia.com/gpu: 4
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+          volumeMounts:
+            - mountPath: "/Disk2"
+              name: vl-bert-trainer-volume
+            - mountPath: /dev/shm
+              name: cache-volume
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-pool-1
