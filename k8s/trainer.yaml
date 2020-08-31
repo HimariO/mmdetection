@@ -12,27 +12,27 @@ spec:
     spec:
       restartPolicy: OnFailure
       volumes:
-        - name: vl-bert-trainer-volume
+        - name: mmdet-trainer-volume
           persistentVolumeClaim:
-            claimName: vl-bert-trainer-volume-claim
+            claimName: mmdet-trainer-volume-claim
         - name: cache-volume
           emptyDir:
             medium: Memory
             sizeLimit: 512Mi
       containers:
         - name: mmdet-trainer
-          image: asia.gcr.io/alfredlabs-model-training/vl-bert
+          image: asia.gcr.io/alfredlabs-model-training/mmdet
           command: ["/bin/sh", "-c"]
           args: [
-            "python3"
+            "python3 tools/dist_train.sh configs/res2net/faster_rcnn_r2_101_fpn_2x_vg.py 4 --work-dir /Disk2/faster_rcnn_r2_101_fpn_2x_vg"
           ]
           ports:
             - containerPort: 5672
             - containerPort: 15672
           resources:
             limits:
-              cpu: "12"
-              memory: "48Gi"
+              cpu: "14"
+              memory: "80Gi"
               nvidia.com/gpu: 4
           securityContext:
             privileged: true
@@ -41,7 +41,7 @@ spec:
                 - SYS_ADMIN
           volumeMounts:
             - mountPath: "/Disk2"
-              name: vl-bert-trainer-volume
+              name: mmdet-trainer-volume
             - mountPath: /dev/shm
               name: cache-volume
       nodeSelector:

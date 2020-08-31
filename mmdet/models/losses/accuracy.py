@@ -49,9 +49,11 @@ def accuracy(pred, target, topk=1, thresh=None):
     return res[0] if return_single else res
 
 
-def multi_class_auccary(pred, target, thresh=0.5):
+def multi_class_auccary(pred, target, thresh=0.5, sigmoid=True):
     assert pred.ndim == 2 and target.ndim == 2
     assert pred.size(0) == target.size(0)
+    if sigmoid:
+        pred = torch.sigmoid(pred)
     num_class = pred.shape[-1]
     mask = nn.functional.one_hot(target, num_classes=num_class + 1)
     mask = mask.sum(dim=1)[..., :-1] > 0.1
