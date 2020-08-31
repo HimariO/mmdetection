@@ -1,14 +1,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mmdet-trainer
+  name: mmdet-dev
   labels:
-    app: mmdet-trainer
+    app: mmdet-dev
 spec:
   template:
     metadata:
       labels:
-        app: mmdet-trainer
+        app: mmdet-dev
     spec:
       restartPolicy: OnFailure
       volumes:
@@ -20,11 +20,11 @@ spec:
             medium: Memory
             sizeLimit: 512Mi
       containers:
-        - name: mmdet-trainer
+        - name: mmdet-dev
           image: asia.gcr.io/alfredlabs-model-training/mmdet
           command: ["/bin/sh", "-c"]
           args: [
-            "./tools/dist_train.sh configs/res2net/faster_rcnn_r2_101_fpn_2x_vg.py 4 --work-dir /Disk2/faster_rcnn_r2_101_fpn_2x_vg"
+            "python3 -c 'import time; time.sleep(9999999)'"
           ]
           ports:
             - containerPort: 5672

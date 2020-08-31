@@ -87,7 +87,12 @@ class ConvFCBBoxHead(BBoxHead):
         if self.with_cls:
             self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes + 1)
         if self.with_attr:
-            self.fc_attr = nn.Linear(self.attr_last_dim, self.num_attr_classes)
+            # self.fc_attr = nn.Linear(self.attr_last_dim, self.num_attr_classes)
+            self.fc_attr = nn.Sequential(
+                nn.Linear(self.attr_last_dim + 64, self.attr_last_dim),
+                nn.ReLU(),
+                nn.Linear(self.attr_last_dim, self.num_attr_classes),
+            )
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
@@ -190,7 +195,7 @@ class ConvFCBBoxHead(BBoxHead):
             x_reg = self.relu(fc(x_reg))
 
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
-        attr_score = self.fc_attr(x_attr) if self.with_attr else None
+        attr_score = self.forward_attr_with_prior(x_attr, cls_score)
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
         return cls_score, bbox_pred, attr_score
 

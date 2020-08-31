@@ -72,7 +72,12 @@ class BBoxHead(nn.Module):
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
         if self.with_attr:
             # NOTE: multi-label per box, not using softmax
-            self.fc_attr = nn.Linear(in_channels, num_attr_classes)
+            self.fc_attr = nn.Sequential(
+                nn.Linear(in_channels + 64, in_channels),
+                nn.ReLU(),
+                nn.Linear(in_channels, num_attr_classes),
+            )
+            self.attr_cls_embed = nn.Embedding(num_classes + 1, 64)
         self.debug_imgs = None
 
     def init_weights(self):
@@ -81,11 +86,23 @@ class BBoxHead(nn.Module):
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
         if self.with_attr:
-            nn.init.normal_(self.fc_attr.weight, 0, 0.01)
-            nn.init.constant_(self.fc_attr.bias, 0)
+            nn.init.normal_(self.fc_attr[0].weight, 0, 0.01)
+            nn.init.constant_(self.fc_attr[0].bias, 0)
+            nn.init.normal_(self.fc_attr[2].weight, 0, 0.01)
+            nn.init.constant_(self.fc_attr[2].bias, 0)
         if self.with_reg:
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
+    
+    @auto_fp16()
+    def forward_attr_with_prior(self, base_feat, cls_logit):
+        if self.with_attr:
+            _, max_args = cls_logit.max(dim=-1)
+            cls_emb = self.attr_cls_embed(max_args)
+            cat_feat = torch.cat([base_feat, cls_emb], dim=-1)
+            return self.fc_attr(cat_feat)
+        else:
+            return None
 
     @auto_fp16()
     def forward(self, x):
@@ -93,7 +110,7 @@ class BBoxHead(nn.Module):
             x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         cls_score = self.fc_cls(x) if self.with_cls else None
-        attr_score = self.fc_attr(x) if self.with_attr else None
+        attr_score = self.forward_attr_with_prior(x, cls_score)
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         if with_attr:
             return cls_score, bbox_pred, attr_score
