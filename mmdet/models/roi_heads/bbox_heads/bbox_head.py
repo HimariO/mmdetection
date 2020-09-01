@@ -34,7 +34,7 @@ class BBoxHead(nn.Module):
                      use_sigmoid=False,
                      loss_weight=1.0),
                  loss_attr=dict(
-                     type='CrossEntropyLoss',
+                     type='FocalLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
                  loss_bbox=dict(
@@ -277,7 +277,10 @@ class BBoxHead(nn.Module):
                     attr_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                losses['attr_acc'] = multi_class_auccary(attr_score, attrs)
+                losses['attr_pos_acc'] = multi_class_auccary(
+                    attr_score, attrs, postive_target=True)
+                losses['attr_neg_acc'] = multi_class_auccary(
+                    attr_score, attrs, postive_target=False)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

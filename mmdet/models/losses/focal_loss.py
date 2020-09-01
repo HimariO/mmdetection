@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
@@ -36,7 +37,8 @@ def py_sigmoid_focal_loss(pred,
     focal_weight = (alpha * target + (1 - alpha) *
                     (1 - target)) * pt.pow(gamma)
     loss = F.binary_cross_entropy_with_logits(
-        pred, target, reduction='none') * focal_weight
+        pred, target, reduction='none')
+    loss = (loss * focal_weight).mean(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
@@ -143,7 +145,23 @@ class FocalLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.use_sigmoid:
-            loss_cls = self.loss_weight * sigmoid_focal_loss(
+            # loss_cls = self.loss_weight * sigmoid_focal_loss(
+            #     pred,
+            #     target,
+            #     weight,
+            #     gamma=self.gamma,
+            #     alpha=self.alpha,
+            #     reduction=reduction,
+            #     avg_factor=avg_factor)
+            
+            if pred.dim() == target.dim() and pred.shape[-1] != target.shape[-1] and target.dtype == torch.long:
+                num_class = pred.shape[-1]
+                onehot = torch.nn.functional.one_hot(target, num_classes=num_class + 1)
+                # import pdb; pdb.set_trace()
+                onehot = onehot.sum(dim=1)[..., :-1]  # remove background/no-attr class
+                target = onehot
+            
+            loss_cls = py_sigmoid_focal_loss(
                 pred,
                 target,
                 weight,
