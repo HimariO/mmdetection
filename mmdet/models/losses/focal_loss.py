@@ -38,6 +38,8 @@ def py_sigmoid_focal_loss(pred,
                     (1 - target)) * pt.pow(gamma)
     loss = F.binary_cross_entropy_with_logits(
         pred, target, reduction='none')
+    neg_mask = (target <= 0.5).float()
+    loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
     loss = (loss * focal_weight).mean(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
