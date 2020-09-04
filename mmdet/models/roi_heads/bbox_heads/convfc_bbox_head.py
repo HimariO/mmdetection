@@ -91,7 +91,7 @@ class ConvFCBBoxHead(BBoxHead):
             self.fc_attr = nn.Sequential(
                 nn.Linear(self.attr_last_dim + 64, self.attr_last_dim),
                 nn.ReLU(),
-                nn.Linear(self.attr_last_dim, self.num_attr_classes),
+                nn.Linear(self.attr_last_dim, self.num_attr_classes + 1),
             )
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *

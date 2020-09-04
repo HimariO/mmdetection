@@ -2161,7 +2161,7 @@ VG_ATTRS = [
 class VisualGenome(CustomDataset):
 
     CLASSES = tuple(VG_CLASSES)
-    MAX_ATTR_PER_BOX = 3
+    MAX_ATTR_PER_BOX = 5
 
     def pad_attr(self, boxes_attr):
         padded = []

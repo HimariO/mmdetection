@@ -75,7 +75,7 @@ class BBoxHead(nn.Module):
             self.fc_attr = nn.Sequential(
                 nn.Linear(in_channels + 64, in_channels),
                 nn.ReLU(),
-                nn.Linear(in_channels, num_attr_classes),
+                nn.Linear(in_channels, num_attr_classes + 1),
             )
             self.attr_cls_embed = nn.Embedding(num_classes + 1, 64)
         self.debug_imgs = None
@@ -278,9 +278,9 @@ class BBoxHead(nn.Module):
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
                 losses['attr_pos_acc'] = multi_class_auccary(
-                    attr_score, attrs, postive_target=True)
+                    attr_score, attrs, postive_target=True, sigmoid=False)
                 losses['attr_neg_acc'] = multi_class_auccary(
-                    attr_score, attrs, postive_target=False)
+                    attr_score, attrs, postive_target=False, sigmoid=False)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

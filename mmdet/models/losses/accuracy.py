@@ -52,18 +52,44 @@ def accuracy(pred, target, topk=1, thresh=None):
 def multi_class_auccary(pred, target, thresh=0.5, sigmoid=True, postive_target=True):
     assert pred.ndim == 2 and target.ndim == 2
     assert pred.size(0) == target.size(0)
-    if sigmoid:
-        pred = torch.sigmoid(pred)
+
     num_class = pred.shape[-1]
-    mask = nn.functional.one_hot(target, num_classes=num_class + 1)
-    if postive_target:
-        mask = mask.sum(dim=1)[..., :-1] > 0.1
-        correct = (pred[mask] > thresh).sum().float()
+    num_attr_per_obj = target.shape[-1]
+    
+    if sigmoid:
+        mask = nn.functional.one_hot(target, num_classes=num_class + 1)
+        pred = torch.sigmoid(pred)
+        
+        if postive_target:
+            mask = mask.sum(dim=1)[..., :-1] > 0.1
+            correct = (pred[mask] > thresh).sum().float()
+        else:
+            mask = mask.sum(dim=1)[..., :-1] < 0.1
+            correct = (pred[mask] < thresh).sum().float()
     else:
-        mask = mask.sum(dim=1)[..., :-1] < 0.1
-        correct = (pred[mask] < thresh).sum().float()
+        mask = nn.functional.one_hot(target, num_classes=num_class).sum(dim=1).float()
+        bg_mask = mask[..., -1:]
+        bg_mask = bg_mask * (bg_mask > num_attr_per_obj - 1e-5).float()
+        bg_mask = bg_mask.clamp(0, 1)
+        mask = torch.cat([mask[..., :-1], bg_mask], dim=-1)
+
+        pred = nn.functional.softmax(pred, -1)
+        thresh = mask.sum(dim=1)
+        thresh = 1 / torch.unsqueeze(thresh, dim=1) / 2
+
+        if postive_target:
+            mask[:, -1] = 0
+        else:
+            mask[:, :-1] = 0
+        mask = mask > 0.1
+        correct = (pred > thresh)[mask].sum().float()
+        # import pdb; pdb.set_trace()
+    
     total = mask.sum().float()
-    return 100.0 * (correct / total)
+    percent_ac = 100.0 * (correct / total)
+    if percent_ac > 100:
+        import pdb; pdb.set_trace()
+    return percent_ac
 
 
 class Accuracy(nn.Module):

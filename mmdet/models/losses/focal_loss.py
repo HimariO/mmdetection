@@ -36,11 +36,12 @@ def py_sigmoid_focal_loss(pred,
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     focal_weight = (alpha * target + (1 - alpha) *
                     (1 - target)) * pt.pow(gamma)
-    loss = F.binary_cross_entropy_with_logits(
-        pred, target, reduction='none')
-    neg_mask = (target <= 0.5).float()
-    loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
-    loss = (loss * focal_weight).mean(dim=-1)
+    loss = F.binary_cross_entropy(F.softmax(pred, dim=-1), target, reduction='none')
+    # loss = F.binary_cross_entropy_with_logits(
+    #     pred, target, reduction='none')
+    # neg_mask = (target <= 0.5).float()
+    # loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
+    loss = (loss * focal_weight).sum(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
@@ -158,10 +159,14 @@ class FocalLoss(nn.Module):
             
             if pred.dim() == target.dim() and pred.shape[-1] != target.shape[-1] and target.dtype == torch.long:
                 num_class = pred.shape[-1]
-                onehot = torch.nn.functional.one_hot(target, num_classes=num_class + 1)
+                num_attr_per_obj = float(target.shape[-1])
+                onehot = torch.nn.functional.one_hot(target, num_classes=num_class).float()
                 # import pdb; pdb.set_trace()
-                onehot = onehot.sum(dim=1)[..., :-1]  # remove background/no-attr class
-                target = onehot
+                onehot = onehot.sum(dim=1) # [..., :-1]  # remove background/no-attr class
+                bg = onehot[..., -1:]
+                bg = bg * (bg > num_attr_per_obj - 1e-5).float()
+                bg = bg.clamp(0, 1)
+                target = torch.cat([onehot[..., :-1], bg], dim=-1)
             
             loss_cls = py_sigmoid_focal_loss(
                 pred,
