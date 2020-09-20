@@ -278,9 +278,9 @@ class BBoxHead(nn.Module):
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
                 losses['attr_pos_acc'] = multi_class_auccary(
-                    attr_score, attrs, postive_target=True, sigmoid=False)
-                losses['attr_neg_acc'] = multi_class_auccary(
-                    attr_score, attrs, postive_target=False, sigmoid=False)
+                    attr_score, attrs, postive_target=True, sigmoid=True)
+                # losses['attr_neg_acc'] = multi_class_auccary(
+                #     attr_score, attrs, postive_target=False, sigmoid=False)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

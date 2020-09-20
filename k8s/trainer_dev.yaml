@@ -32,7 +32,7 @@ spec:
           resources:
             limits:
               cpu: "14"
-              memory: "80Gi"
+              memory: "90Gi"
               nvidia.com/gpu: 4
           securityContext:
             privileged: true
