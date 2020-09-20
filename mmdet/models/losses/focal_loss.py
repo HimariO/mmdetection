@@ -7,6 +7,19 @@ from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
+def add_rand_attr_sample(ignore_mask):
+    """
+    ignore_mask: (num_RoI,) fp32 [0, MAX_ATTR_PER_OBJ]
+    """
+    positive_mask = ignore_mask.clamp(0, 1)
+    negative_mask = 1 - positive_mask
+    num_pos = positive_mask.sum()
+    k = int(min(ignore_mask.shape[0] - num_pos, num_pos))
+    _, indices = torch.topk(negative_mask, k, dim=0)
+    ignore_mask[indices] = 1.0
+    return ignore_mask
+
+
 # This method is only for debugging
 def py_sigmoid_focal_loss(pred,
                           target,
@@ -43,6 +56,7 @@ def py_sigmoid_focal_loss(pred,
     # loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
 
     ignore_mask = (target.sum(-1, keepdim=True) > 0).float()  # ignore proposal with no attribute label
+    ignore_mask = add_rand_attr_sample(ignore_mask)
     loss = (loss * focal_weight * ignore_mask).sum(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, ignore_mask.sum())
     return loss
