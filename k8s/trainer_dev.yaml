@@ -18,7 +18,7 @@ spec:
         - name: cache-volume
           emptyDir:
             medium: Memory
-            sizeLimit: 512Mi
+            sizeLimit: 4096Mi
       containers:
         - name: mmdet-dev
           image: asia.gcr.io/alfredlabs-model-training/mmdet

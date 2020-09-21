@@ -215,6 +215,22 @@ class Shared2FCBBoxHead(ConvFCBBoxHead):
             *args,
             **kwargs)
 
+@HEADS.register_module()
+class Shared2FC1BBoxHead(ConvFCBBoxHead):
+
+    def __init__(self, fc_out_channels=1024, *args, **kwargs):
+        super(Shared2FC1BBoxHead, self).__init__(
+            num_shared_convs=0,
+            num_shared_fcs=2,
+            num_cls_convs=0,
+            num_cls_fcs=1,
+            num_reg_convs=0,
+            num_reg_fcs=1,
+            num_attr_fcs=1,
+            fc_out_channels=fc_out_channels,
+            *args,
+            **kwargs)
+
 
 @HEADS.register_module()
 class Shared4Conv1FCBBoxHead(ConvFCBBoxHead):

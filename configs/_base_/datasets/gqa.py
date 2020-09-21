@@ -27,18 +27,45 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-data = dict(
-    samples_per_gpu=3,
-    workers_per_gpu=2,
-    train=dict(
+
+dataset_A_train = dict(
+    type='ClassBalancedDataset',
+    oversample_thr=1e-3,
+    dataset=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/gqa_objects.train.json',
         img_prefix=data_root + 'images/',
-        pipeline=train_pipeline),
-    val=dict(
+        pipeline=train_pipeline)
+)
+dataset_A_val = dict(
+    type='ClassBalancedDataset',
+    oversample_thr=1e-3,
+    dataset=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/gqa_objects.val.json',
         img_prefix=data_root + 'images/',
-        pipeline=test_pipeline),
+        pipeline=train_pipeline)
+)
+data = dict(
+    samples_per_gpu=2,
+    workers_per_gpu=2,
+    train=dataset_A_train,
+    val=dataset_A_val,
     test=None)
+
+# data = dict(
+#     samples_per_gpu=2,
+#     workers_per_gpu=2,
+#     train=dict(
+#         type=dataset_type,
+#         ann_file=data_root + 'annotations/gqa_objects.train.json',
+#         img_prefix=data_root + 'images/',
+#         pipeline=train_pipeline),
+#     val=dict(
+#         type=dataset_type,
+#         ann_file=data_root + 'annotations/gqa_objects.val.json',
+#         img_prefix=data_root + 'images/',
+#         pipeline=test_pipeline),
+#     test=None)
+
 evaluation = dict(interval=1, metric='bbox')

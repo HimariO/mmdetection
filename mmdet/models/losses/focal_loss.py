@@ -13,7 +13,7 @@ def add_rand_attr_sample(ignore_mask):
     """
     positive_mask = ignore_mask.clamp(0, 1)
     negative_mask = 1 - positive_mask
-    num_pos = positive_mask.sum()
+    num_pos = max(positive_mask.sum() // 4, 1)
     k = int(min(ignore_mask.shape[0] - num_pos, num_pos))
     _, indices = torch.topk(negative_mask, k, dim=0)
     ignore_mask[indices] = 1.0

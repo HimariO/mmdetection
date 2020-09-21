@@ -6,7 +6,7 @@ _base_ = [
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.0002, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
@@ -27,7 +27,7 @@ model = dict(
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
-            type='Shared2FCBBoxHead',
+            type='Shared2FC1BBoxHead',
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,

@@ -4547,7 +4547,7 @@ GQA_ATTRS = [
 @DATASETS.register_module()
 class GQA(CustomDataset):
 
-    CLASSES = tuple(VG_CLASSES)
+    CLASSES = tuple(GQA_CLASSES)
     MAX_ATTR_PER_BOX = 5
 
     def pad_attr(self, boxes_attr):
@@ -4572,10 +4572,17 @@ class GQA(CustomDataset):
             width = ann_line['width']
             height = ann_line['height']
 
-            bboxes = np.array(ann_line['boxes'])
-            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 1, width - 1)
-            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 1, height - 1)
+            _bboxes = np.array(ann_line['boxes'])
+            bboxes = np.zeros_like(_bboxes)
+            bboxes[:, 0::2] = np.clip(_bboxes[:, 0::2], 1, width - 1)
+            bboxes[:, 1::2] = np.clip(_bboxes[:, 1::2], 1, height - 1)
             labels = ann_line['class_id']
+
+            if ((bboxes[:, 2] - bboxes[:, 0]) < 1).any():
+                import pdb; pdb.set_trace()
+            if ((bboxes[:, 3] - bboxes[:, 1]) < 1).any():
+                import pdb; pdb.set_trace()
+
             # attrs = [[3] * random.randint(1, 3)] * len(labels)
             attrs = self.pad_attr(ann_line['attribute_idx'])
             try:

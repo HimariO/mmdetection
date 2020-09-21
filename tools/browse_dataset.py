@@ -42,11 +42,25 @@ def retrieve_data_cfg(config_path, skip_type):
     return cfg
 
 
+def check_dataset_value(dataset):
+    for item in dataset:
+        # print(item['img'])
+        # print(item['gt_bboxes'])
+        # print(item['gt_labels'])
+        print(item['img'].data.min(), item['img'].data.max())
+        print(item['gt_bboxes'].data.min(), item['gt_bboxes'].data.max(),  item['gt_bboxes'].data.mean())
+        print(item['gt_labels'].data.min(), item['gt_labels'].data.max())
+        yn = input()
+        if yn.lower() == 'y':
+            import pdb; pdb.set_trace()
+
+
 def main():
     args = parse_args()
     cfg = retrieve_data_cfg(args.config, args.skip_type)
 
     dataset = build_dataset(cfg.data.train)
+    check_dataset_value(dataset)
 
     progress_bar = mmcv.ProgressBar(len(dataset))
     for item in dataset:

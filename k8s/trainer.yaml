@@ -18,13 +18,13 @@ spec:
         - name: cache-volume
           emptyDir:
             medium: Memory
-            sizeLimit: 512Mi
+            sizeLimit: 4096Mi
       containers:
         - name: mmdet-trainer
           image: asia.gcr.io/alfredlabs-model-training/mmdet
           command: ["/bin/sh", "-c"]
           args: [
-            "./tools/dist_train.sh configs/res2net/faster_rcnn_r2_101_fpn_2x_vg.py 4 --work-dir /Disk2/faster_rcnn_r2_101_fpn_2x_vg"
+            "pip install mmcv==1.1.1 && ./tools/dist_train.sh configs/res2net/faster_rcnn_r2_101_fpn_2x_gqa.py 4 --work-dir /Disk2/faster_rcnn_r2_101_fpn_2x_gqa_0921"
           ]
           ports:
             - containerPort: 5672
@@ -32,7 +32,7 @@ spec:
           resources:
             limits:
               cpu: "14"
-              memory: "80Gi"
+              memory: "90Gi"
               nvidia.com/gpu: 4
           securityContext:
             privileged: true

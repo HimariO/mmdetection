@@ -374,6 +374,8 @@ class AttrRoIHead(StandardRoIHead):
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
+            if any([torch.isnan(b).any() for b in gt_bboxes]):
+                import pdb; pdb.set_trace()
             bbox_results = self._bbox_forward_train(x, sampling_results,
                                                     gt_bboxes, gt_labels,
                                                     img_metas)
