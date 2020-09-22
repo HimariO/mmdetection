@@ -4554,6 +4554,7 @@ class GQA(CustomDataset):
         padded = []
         pad_const = len(GQA_ATTRS)
         for attr in boxes_attr:
+            attr = list(set(attr))
             p = attr[:self.MAX_ATTR_PER_BOX] + [pad_const] * \
                 max(0, self.MAX_ATTR_PER_BOX - len(attr))
             padded.append(p)
@@ -4591,9 +4592,17 @@ class GQA(CustomDataset):
                 bboxes = bboxes.astype(np.float32)
 
                 if (attrs > len(GQA_ATTRS)).any():
-                    raise RuntimeError()
-
-            except:
+                    raise RuntimeError('1')
+                for attr in attrs:
+                    counting = [0 for _ in range(len(GQA_ATTRS) + 1)]
+                    for i in attr:
+                        if i != len(GQA_ATTRS):
+                            i = int(i)
+                            counting[i] += 1
+                            if counting[i] > 1:
+                                raise RuntimeError('2 ' + str(attr))
+            except Exception as e:
+                print("LOlllll: ", e)
                 import pdb; pdb.set_trace()
             data_infos.append(
                 dict(

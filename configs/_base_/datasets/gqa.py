@@ -38,13 +38,10 @@ dataset_A_train = dict(
         pipeline=train_pipeline)
 )
 dataset_A_val = dict(
-    type='ClassBalancedDataset',
-    oversample_thr=1e-3,
-    dataset=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/gqa_objects.val.json',
-        img_prefix=data_root + 'images/',
-        pipeline=train_pipeline)
+    type=dataset_type,
+    ann_file=data_root + 'annotations/gqa_objects.val.json',
+    img_prefix=data_root + 'images/',
+    pipeline=test_pipeline
 )
 data = dict(
     samples_per_gpu=2,
@@ -68,4 +65,4 @@ data = dict(
 #         pipeline=test_pipeline),
 #     test=None)
 
-evaluation = dict(interval=1, metric='bbox')
+evaluation = dict(interval=1, metric='mAP')

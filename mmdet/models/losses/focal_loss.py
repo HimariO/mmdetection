@@ -47,11 +47,9 @@ def py_sigmoid_focal_loss(pred,
     pred_sigmoid = pred.sigmoid()
     target = target.type_as(pred)
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
-    focal_weight = (alpha * target + (1 - alpha) *
-                    (1 - target)) * pt.pow(gamma)
-    loss = F.binary_cross_entropy(F.softmax(pred, dim=-1), target, reduction='none')
-    # loss = F.binary_cross_entropy_with_logits(
-    #     pred, target, reduction='none')
+    focal_weight = (alpha * target + (1 - alpha) * (1 - target)) * pt.pow(gamma)
+    # loss = F.binary_cross_entropy(F.softmax(pred, dim=-1), target, reduction='none')
+    loss = F.binary_cross_entropy_with_logits(pred, target, reduction='none')
     # neg_mask = (target <= 0.5).float()
     # loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
 
@@ -59,6 +57,12 @@ def py_sigmoid_focal_loss(pred,
     ignore_mask = add_rand_attr_sample(ignore_mask)
     loss = (loss * focal_weight * ignore_mask).sum(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, ignore_mask.sum())
+
+    # if float(loss) < 0.0:
+    #     print(pred, pred.min(), pred.max())
+    #     print(target, target.min(), target.max())
+    #     import pdb; pdb.set_trace()
+    #     print('-' * 100)
     return loss
 
 
