@@ -105,8 +105,8 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
 
     dx = (gx - px) / pw
     dy = (gy - py) / ph
-    dw = torch.log(gw / pw)
-    dh = torch.log(gh / ph)
+    dw = torch.log(gw / pw + 1e-10)
+    dh = torch.log(gh / ph + 1e-10)
     deltas = torch.stack([dx, dy, dw, dh], dim=-1)
 
     means = deltas.new_tensor(means).unsqueeze(0)
