@@ -241,9 +241,12 @@ class BBoxHead(nn.Module):
                     reduction_override=reduction_override)
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0
-            # if torch.isnan(losses['loss_bbox']).any():
-            #     import pdb; pdb.set_trace()
-            #     losses['loss_bbox'] = torch.zeros_like(losses['loss_bbox'])
+        
+        # print(f'cls_score: [{cls_score.min()}, {cls_score.max()}] ', f'bbox_targets: [{bbox_targets.min()}, {bbox_targets.max()}] ')
+        # print(f'pos_bbox_pred: [{pos_bbox_pred.min()}, {pos_bbox_pred.max()}] ')
+        # if torch.isnan(losses['loss_bbox']).any():
+        #     import pdb; pdb.set_trace()
+        #     losses['loss_bbox'] = torch.zeros_like(losses['loss_bbox'])
         return losses
     
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

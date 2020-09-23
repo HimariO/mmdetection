@@ -4583,6 +4583,9 @@ class GQA(CustomDataset):
                 import pdb; pdb.set_trace()
             if ((bboxes[:, 3] - bboxes[:, 1]) < 1).any():
                 import pdb; pdb.set_trace()
+            if np.isnan(bboxes).any() or np.isnan(bboxes[:, 2:] - bboxes[:, :2]).any():
+                import pdb; pdb.set_trace()
+
 
             # attrs = [[3] * random.randint(1, 3)] * len(labels)
             attrs = self.pad_attr(ann_line['attribute_idx'])
