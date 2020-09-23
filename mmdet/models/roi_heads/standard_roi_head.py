@@ -393,3 +393,47 @@ class AttrRoIHead(StandardRoIHead):
         if gt_attrs:
             self._mask_forward
         return losses
+    
+    def simple_test_bboxes(self,
+                           x,
+                           img_metas,
+                           proposals,
+                           rcnn_test_cfg,
+                           rescale=False):
+        """Test only det bboxes without augmentation."""
+        rois = bbox2roi(proposals)
+        bbox_results = self._bbox_forward(x, rois)
+        img_shape = img_metas[0]['img_shape']
+        scale_factor = img_metas[0]['scale_factor']
+        det_bboxes, det_labels, attr_scores = self.bbox_head.get_bboxes_with_attr(
+            rois,
+            bbox_results['cls_score'],
+            bbox_results['attr_score'],
+            bbox_results['bbox_pred'],
+            img_shape,
+            scale_factor,
+            rescale=rescale,
+            cfg=rcnn_test_cfg)
+        return det_bboxes, det_labels, attr_scores
+    
+    def simple_test(self,
+                    x,
+                    proposal_list,
+                    img_metas,
+                    proposals=None,
+                    rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
+
+        det_bboxes, det_labels, attr_scores = self.simple_test_bboxes(
+            x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+        import pdb; pdb.set_trace()
+
+        if not self.with_mask:
+            return bbox_results
+        else:
+            segm_results = self.simple_test_mask(
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
+            return bbox_results, segm_results
