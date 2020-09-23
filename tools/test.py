@@ -194,4 +194,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    from loguru import logger
+    with logger.catch():
+        main()
