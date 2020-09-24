@@ -1,12 +1,12 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/gqa.py',
+    '../_base_/datasets/image_clip.py',
     '../_base_/default_runtime.py'
 ]
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.02/4, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer = dict(type='SGD', lr=0.0001, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy='step',
@@ -20,20 +20,18 @@ model = dict(
     pretrained='open-mmlab://res2net101_v1d_26w_4s',
     backbone=dict(type='Res2Net', depth=101, scales=4, base_width=26),
     roi_head=dict(
-        type='AttrRoIHead',
+        type='StandardRoIHead',
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
-            type='Shared2FC1BBoxHead',
+            type='Shared2FCBBoxHead',
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=1702,
-            num_attr_classes=617,
-            with_attr=True,
+            num_classes=1,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0., 0., 0., 0.],

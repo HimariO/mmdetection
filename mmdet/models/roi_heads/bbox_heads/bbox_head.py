@@ -241,9 +241,12 @@ class BBoxHead(nn.Module):
                     reduction_override=reduction_override)
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0
-            # if torch.isnan(losses['loss_bbox']).any():
-            #     import pdb; pdb.set_trace()
-            #     losses['loss_bbox'] = torch.zeros_like(losses['loss_bbox'])
+        
+        # print(f'cls_score: [{cls_score.min()}, {cls_score.max()}] ', f'bbox_targets: [{bbox_targets.min()}, {bbox_targets.max()}] ')
+        # print(f'pos_bbox_pred: [{pos_bbox_pred.min()}, {pos_bbox_pred.max()}] ')
+        # if torch.isnan(losses['loss_bbox']).any():
+        #     import pdb; pdb.set_trace()
+        #     losses['loss_bbox'] = torch.zeros_like(losses['loss_bbox'])
         return losses
     
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
@@ -324,6 +327,48 @@ class BBoxHead(nn.Module):
                                                     cfg.max_per_img)
 
             return det_bboxes, det_labels
+    
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
+    def get_bboxes_with_attr(self,
+                   rois,
+                   cls_score,
+                   attr_score,
+                   bbox_pred,
+                   img_shape,
+                   scale_factor,
+                   rescale=False,
+                   cfg=None):
+        if isinstance(cls_score, list):
+            cls_score = sum(cls_score) / float(len(cls_score))
+        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+        attr_score = torch.sigmoid(attr_score) if attr_score is not None else None
+
+        if bbox_pred is not None:
+            bboxes = self.bbox_coder.decode(
+                rois[:, 1:], bbox_pred, max_shape=img_shape)
+        else:
+            bboxes = rois[:, 1:].clone()
+            if img_shape is not None:
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+
+        if rescale and bboxes.size(0) > 0:
+            if isinstance(scale_factor, float):
+                bboxes /= scale_factor
+            else:
+                scale_factor = bboxes.new_tensor(scale_factor)
+                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
+                          scale_factor).view(bboxes.size()[0], -1)
+
+        if cfg is None:
+            return bboxes, scores
+        else:
+            det_bboxes, det_labels, keep_attr_score = multiclass_nms(bboxes, scores,
+                                                        cfg.score_thr, cfg.nms,
+                                                        max_num=cfg.max_per_img,
+                                                        attr_score=attr_score)
+
+            return det_bboxes, det_labels, keep_attr_score
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):

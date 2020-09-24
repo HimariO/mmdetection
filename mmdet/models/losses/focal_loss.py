@@ -54,7 +54,7 @@ def py_sigmoid_focal_loss(pred,
     # loss = loss * (1 - neg_mask) * 2 + 0.5 * loss * neg_mask
 
     ignore_mask = (target.sum(-1, keepdim=True) > 0).float()  # ignore proposal with no attribute label
-    ignore_mask = add_rand_attr_sample(ignore_mask)
+    # ignore_mask = add_rand_attr_sample(ignore_mask)
     loss = (loss * focal_weight * ignore_mask).sum(dim=-1)
     loss = weight_reduce_loss(loss, weight, reduction, ignore_mask.sum())
 

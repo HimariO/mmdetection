@@ -165,7 +165,6 @@ class ConvFCBBoxHead(BBoxHead):
         # separate branches
         x_cls = x
         x_reg = x
-        x_attr = x
 
         for conv in self.cls_convs:
             x_cls = conv(x_cls)
@@ -176,14 +175,6 @@ class ConvFCBBoxHead(BBoxHead):
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
         
-        for conv in self.attr_convs:
-            x_attr = conv(x_attr)
-        if x_attr.dim() > 2:
-            if self.with_avg_pool:
-                x_attr = self.avg_pool(x_attr)
-            x_attr = x_attr.flatten(1)
-        for fc in self.attr_fcs:
-            x_attr = self.relu(fc(x_attr))
 
         for conv in self.reg_convs:
             x_reg = conv(x_reg)
@@ -193,11 +184,26 @@ class ConvFCBBoxHead(BBoxHead):
             x_reg = x_reg.flatten(1)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
-
+        
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
-        attr_score = self.forward_attr_with_prior(x_attr, cls_score)
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
-        return cls_score, bbox_pred, attr_score
+
+        if self.with_attr:
+            x_attr = x
+            
+            for conv in self.attr_convs:
+                x_attr = conv(x_attr)
+            if x_attr.dim() > 2:
+                if self.with_avg_pool:
+                    x_attr = self.avg_pool(x_attr)
+                x_attr = x_attr.flatten(1)
+            for fc in self.attr_fcs:
+                x_attr = self.relu(fc(x_attr))
+            
+            attr_score = self.forward_attr_with_prior(x_attr, cls_score)
+            return cls_score, bbox_pred, attr_score
+        else:
+            return cls_score, bbox_pred
 
 
 @HEADS.register_module()

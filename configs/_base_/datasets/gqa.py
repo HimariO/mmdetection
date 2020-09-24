@@ -48,7 +48,7 @@ data = dict(
     workers_per_gpu=2,
     train=dataset_A_train,
     val=dataset_A_val,
-    test=None)
+    test=dataset_A_val)
 
 # data = dict(
 #     samples_per_gpu=2,
