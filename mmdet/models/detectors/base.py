@@ -259,7 +259,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     result,
                     score_thr=0.3,
                     bbox_color='green',
-                    text_color='green',
+                    text_color='red',
                     thickness=1,
                     font_scale=0.5,
                     win_name='',
@@ -292,11 +292,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = mmcv.imread(img)
         img = img.copy()
         if isinstance(result, tuple):
-            bbox_result, segm_result = result
-            if isinstance(segm_result, tuple):
-                segm_result = segm_result[0]  # ms rcnn
+            if result[1].dim() > 2:
+                bbox_result, segm_result = result
+                if isinstance(segm_result, tuple):
+                    segm_result = segm_result[0]  # ms rcnn
+            else:
+                bbox_result, segm_result = result[0], None
         else:
             bbox_result, segm_result = result, None
+        # for i, b in enumerate(bbox_result):
+        #     if isinstance(b, torch.Tensor):
+        #         print(i, '>>>', b)
+        # import pdb; pdb.set_trace()
         bboxes = np.vstack(bbox_result)
         labels = [
             np.full(bbox.shape[0], i, dtype=np.int32)

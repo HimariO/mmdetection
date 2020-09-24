@@ -28,4 +28,4 @@ Original Traceback (most recent call last):
 KeyError: 'ann_info'
 
 python3 tools/test.py configs/res2net/faster_rcnn_r2_101_fpn_2x_img_clip.py /Disk2/faster_rcnn_r2_101_fpn_2x_img_clip/epoch_1.pth --show-dir /Disk2/res2net__img_clip_test/
-python3 tools/test.py configs/res2net/faster_rcnn_r2_101_fpn_2x_gqa.py /Disk2/faster_rcnn_r2_101_fpn_2x_gqa_0922/epoch_1.pth --show-dir /Disk2/res2net_test/
+python3 tools/test.py configs/res2net/faster_rcnn_r2_101_fpn_2x_gqa.py /Disk2/faster_rcnn_r2_101_fpn_2x_gqa_0922/epoch_2.pth --show-dir /Disk2/res2net_test/

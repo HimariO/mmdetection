@@ -9,7 +9,7 @@ from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from mmdet.apis import multi_gpu_test, single_gpu_test
+from mmdet.apis import multi_gpu_test, single_gpu_test, single_gpu_test_with_attr
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
@@ -163,11 +163,19 @@ def main():
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
+    
+    if hasattr(dataset, 'ATTR_CLASS'):
+        model.ATTR_CLASS = dataset.ATTR_CLASS
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
-                                  args.show_score_thr)
+
+        if hasattr(dataset, 'ATTR_CLASS') and False:
+            outputs = single_gpu_test_with_attr(
+                model, data_loader, args.show, args.show_dir, args.show_score_thr)
+        else:
+            outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
+                                    args.show_score_thr)
     else:
         model = MMDistributedDataParallel(
             model.cuda(),

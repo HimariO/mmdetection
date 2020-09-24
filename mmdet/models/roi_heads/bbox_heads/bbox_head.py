@@ -324,7 +324,7 @@ class BBoxHead(nn.Module):
         else:
             det_bboxes, det_labels = multiclass_nms(bboxes, scores,
                                                     cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+                                                    max_num=cfg.max_per_img)
 
             return det_bboxes, det_labels
     

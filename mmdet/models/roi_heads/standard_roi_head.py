@@ -429,11 +429,14 @@ class AttrRoIHead(StandardRoIHead):
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
-        import pdb; pdb.set_trace()
+        # for bb in bbox_results:
+        #     print(type(bb))
+        # import pdb; pdb.set_trace()
 
         if not self.with_mask:
-            return bbox_results
+            return bbox_results, attr_scores
         else:
+            raise ValueError('Attribute model dont support mask!')
             segm_results = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return bbox_results, segm_results
