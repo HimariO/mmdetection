@@ -16,6 +16,11 @@ RUN apt-get update && apt-get install -y git ninja-build libglib2.0-0 libsm6 lib
 RUN pip install mmcv-full==latest+torch1.5.0+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
 RUN pip install mmcv==1.1.1 loguru
 
+# RUN git clone https://github.com/HimariO/mmediting.git /mmediting \
+#     && cd ./mmediting \
+#     && pip install -r requirements.txt \
+#     && pip install -v -e .
+
 # Install MMDetection
 RUN conda clean --all
 RUN pwd
