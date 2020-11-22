@@ -2,6 +2,7 @@ import os
 import glob
 import json
 import mmcv
+import fire
 import numpy as np
 from PIL import Image
 from mmdet.apis import init_detector, inference_detector
